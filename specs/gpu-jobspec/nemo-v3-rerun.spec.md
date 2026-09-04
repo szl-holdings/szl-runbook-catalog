@@ -4,7 +4,7 @@ class: gpu-jobspec
 version: 1
 title: Nemo v3 jobspec regeneration envelope
 owner: szl-holdings
-receipt: 9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a
+receipt: 79d710f9ba9efe8815670ebda43038dc6fc56961f5851c73ce8efa05df7863b1
 assets:
   - szl-holdings/szl-gpu-bridge
 ---

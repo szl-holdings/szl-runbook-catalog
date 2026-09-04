@@ -4,7 +4,7 @@ class: vertical-asset
 version: 1
 title: Estate wiring record - the audited constellation manifest
 owner: szl-holdings
-receipt: 0f1e2d3c4b5a6978879605f4e3d2c1b0a9f8e7d6c5b4a39281706f5e4d3c2b1a9
+receipt: f648ee6b752dd68561a93522e32afd24d4cfa925d89b326e4d5290047033f8f2
 assets:
   - szl-holdings/szl-constellation
 ---

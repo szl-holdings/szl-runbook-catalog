@@ -4,7 +4,7 @@ class: bench
 version: 1
 title: Engine bench - TTFT and throughput percentiles
 owner: szl-holdings
-receipt: 8a1c2e4f6b8d0a2c4e6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2
+receipt: 91d8a7526b1ce486f427c45a5084b6c19228396c59e391a0e022ed68247de957
 assets:
   - szl-holdings/frontier-bench
   - szl-holdings/szl-engine-bench

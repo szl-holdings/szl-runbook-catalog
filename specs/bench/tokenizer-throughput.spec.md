@@ -4,7 +4,7 @@ class: bench
 version: 1
 title: Tokenizer throughput lane (gigatoken pattern)
 owner: szl-holdings
-receipt: 5e4d3c2b1a0987654321fedcba0987654321abcdef0123456789abcdef0123
+receipt: 63e6d90d47a75d58caf07b919be6fb23df2cb3f898fcb9f6858ec439249775c4
 tags:
   - tokenization
   - rust-grade-perf

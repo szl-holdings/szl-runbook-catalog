@@ -4,7 +4,7 @@ class: kernel-fixture
 version: 1
 title: Attention kernel trio - deterministic fixture + console axes
 owner: szl-holdings
-receipt: 1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+receipt: c6b07f178508402a259eafb06efbfa51948226d418b6981be33b5dd4b6dac874
 assets:
   - szl-holdings/szl-receipt-attn
   - szl-holdings/szl-maskmod

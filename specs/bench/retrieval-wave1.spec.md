@@ -4,7 +4,7 @@ class: bench
 version: 1
 title: Retrieval bench - wave-1 lane invocation
 owner: szl-holdings
-receipt: 3f4f8f0d2b7b0e2a1b1e2a5f6c4d2c1a0f9e8d7c6b5a49382716f5e4d3c2b1a09
+receipt: f939a1bd18f1e89ffdd302aea09394c3638701afb433dda49390bddd04395bc8
 tags:
   - retrieval
   - bm25

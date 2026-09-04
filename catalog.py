@@ -2,7 +2,7 @@
 """SZL Runbook Catalog validator - stdlib only, fail-closed.
 
 Verifies every spec in specs/:
-  1. parses YAML-ish front-matter (restricted subset, no external deps)
+  1. parses the restricted YAML front-matter subset (scalars + dash lists)
   2. enforces the required schema fields
   3. recomputes the receipt and compares to the committed value
   4. checks registry linkage in catalog.yaml
@@ -17,6 +17,7 @@ REGISTRY = os.path.join(HERE, "catalog.yaml")
 
 REQUIRED = ["id", "class", "version", "title", "owner", "receipt"]
 CLASSES = {"bench", "kernel-fixture", "gpu-jobspec", "vertical-asset"}
+LIST_KEYS = {"tags", "assets"}
 
 def parse_front_matter(text):
     if not text.startswith("---"):
@@ -25,21 +26,26 @@ def parse_front_matter(text):
     if end < 0:
         return None, "unterminated front-matter"
     block = text[3:end].strip()
-    meta, stack = {}, []
+    meta, current_list = {}, None
     for line in block.splitlines():
         if not line.strip():
             continue
-        m = re.match(r"^(\s*)([A-Za-z0-9_-]+):\s*(.*)$", line)
+        li = re.match(r"^\s+-\s+(.*)$", line)
+        if li and current_list:
+            meta[current_list].append(li.group(1).strip().strip('"'))
+            continue
+        m = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", line)
         if not m:
             return None, f"unparseable line: {line!r}"
-        indent, key, val = len(m.group(1)), m.group(2), m.group(3).strip()
-        if val == "":
-            meta[key] = [] if key in ("tags", "assets") else {}
-            stack.append((indent, key))
-        elif isinstance(meta.get(stack[-1][1]) if stack else None, list) and indent > stack[-1][0]:
-            meta[stack[-1][1]].append(val.lstrip("- ").strip())
+        key, val = m.group(1), m.group(2).strip()
+        if val == "" and key in LIST_KEYS:
+            meta[key] = []
+            current_list = key
+        elif val == "":
+            return None, f"empty scalar not allowed: {key}"
         else:
             meta[key] = val.strip('"')
+            current_list = None
     return meta, None
 
 def canonical_receipt(meta):
@@ -65,7 +71,7 @@ def validate_file(path, registered):
     if meta.get("receipt"):
         actual = canonical_receipt(meta)
         if actual != meta["receipt"]:
-            problems.append(f"receipt mismatch: committed {meta['receipt'][:12]}… recomputed {actual[:12]}…")
+            problems.append(f"receipt mismatch: committed {meta['receipt'][:12]}... recomputed {actual[:12]}...")
     if meta.get("id") and meta["id"] not in registered:
         problems.append(f"id '{meta['id']}' not in catalog.yaml registry")
     return problems

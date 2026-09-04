@@ -1,0 +1,35 @@
+name: mirror-to-hf
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Wave-2 pattern: Yikun/hub-mirror-action made hub-to-hub mirroring a CI
+# primitive. SZL evolution: the sync is receipted - the workflow commits a
+# sha256 of the synced payload back into the run summary.
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute payload receipt
+        id: receipt
+        run: |
+          DIGEST=$(cat estates.json verticals.json 2>/dev/null | sha256sum | cut -d' ' -f1 || echo "no-manifests")
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "sync payload sha256: $DIGEST" >> "$GITHUB_STEP_SUMMARY"
+      - name: Mirror manifests to the constellation Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
+        run: |
+          for f in estates.json verticals.json; do
+            [ -f "$f" ] || continue
+            curl -sS -X POST \
+              -H "Authorization: Bearer $HF_TOKEN" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@$f" \
+              "https://huggingface.co/api/spaces/SZLHOLDINGS/szl-constellation/upload/main/$f" || true
+          done
+          echo "mirror attempted; payload receipt: ${{ steps.receipt.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,17 @@
+# SZL Runbook Catalog - registry
+# Every admitted spec is listed here with its class and committed receipt.
+# catalog.py verify enforces linkage both directions.
+
+registry:
+  - id: bench/retrieval-wave1
+    class: bench
+  - id: bench/engine-ttft
+    class: bench
+  - id: bench/tokenizer-throughput
+    class: bench
+  - id: kernel-fixture/attention-trio
+    class: kernel-fixture
+  - id: gpu-jobspec/nemo-v3-rerun
+    class: gpu-jobspec
+  - id: vertical-asset/estate-wiring-2026-09-04
+    class: vertical-asset

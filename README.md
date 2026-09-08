@@ -11,7 +11,8 @@ anyone can recompute offline.
 - `specs/` — the specs themselves (YAML front-matter + body)
 - `catalog.py` — stdlib-only validator: schema, registry linkage, receipt
   recomputation. Exit non-zero on any violation. No third-party deps.
-- `.github/workflows/mirror.yml` — receipted GitHub→HF Space sync
+- `.github/workflows/validate.yml` - source-artifact validation on pull requests
+  and `main`
 
 ## Spec classes
 
@@ -31,6 +32,17 @@ anyone can recompute offline.
 python3 catalog.py verify            # whole catalog, fail-closed
 python3 catalog.py verify specs/bench/retrieval-wave1.spec.md   # one spec
 ```
+
+The whole-catalog command fails closed when `catalog.yaml` or `specs/` is
+missing, when no specs are discovered, or when registry IDs and spec artifacts
+do not match exactly. CI also runs adversarial tests for those cases.
+
+## Provider ownership
+
+This repository is source-only. It does not upload `estates.json`,
+`verticals.json`, or any other artifact to Hugging Face. The Constellation
+release lane exclusively owns publication of the canonical manifests in
+`SZLHOLDINGS/szl-constellation`; catalog validation requires no provider token.
 
 Doctrine v11 — a spec that fails validation is BLOCKED, never grandfathered.
 Apache-2.0 · SZL Holdings

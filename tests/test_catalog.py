@@ -1,9 +1,12 @@
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+import catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +30,26 @@ class CatalogValidatorTests(unittest.TestCase):
         shutil.copy2(ROOT / "catalog.yaml", root / "catalog.yaml")
         shutil.copytree(ROOT / "specs", root / "specs")
         return root
+
+    def rewrite_retrieval_spec_id(self, root, replacement):
+        original = "bench/retrieval-wave1"
+        registry = root / "catalog.yaml"
+        registry.write_text(
+            registry.read_text(encoding="utf-8").replace(original, replacement, 1),
+            encoding="utf-8",
+        )
+
+        spec = root / "specs" / "bench" / "retrieval-wave1.spec.md"
+        text = spec.read_text(encoding="utf-8").replace(
+            f"id: {original}", f"id: {replacement}", 1
+        )
+        meta, error = catalog.parse_front_matter(text)
+        self.assertIsNone(error)
+        receipt = catalog.canonical_receipt(meta)
+        text = re.sub(
+            r"(?m)^receipt:\s*[^\r\n]+$", f"receipt: {receipt}", text, count=1
+        )
+        spec.write_text(text, encoding="utf-8")
 
     def test_committed_catalog_is_admitted(self):
         result = self.run_validator(ROOT)
@@ -76,6 +99,55 @@ class CatalogValidatorTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("duplicate registry id: bench/retrieval-wave1", result.stdout)
+
+    def test_outdented_registry_class_is_blocked(self):
+        root = self.copy_catalog()
+        registry = root / "catalog.yaml"
+        registry.write_text(
+            registry.read_text(encoding="utf-8").replace(
+                "    class: bench", "class: bench", 1
+            ),
+            encoding="utf-8",
+        )
+
+        result = self.run_validator(root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unparseable registry line", result.stdout)
+        self.assertIn("is missing class", result.stdout)
+
+    def test_selected_artifact_with_symlinked_parent_is_blocked(self):
+        root = self.copy_catalog()
+        selected_parent = root / "specs" / "bench"
+        escaped_parent = root / "escaped-bench"
+        selected_parent.rename(escaped_parent)
+        try:
+            selected_parent.symlink_to(escaped_parent, target_is_directory=True)
+        except (NotImplementedError, OSError) as exc:
+            self.skipTest(f"directory symlinks are unavailable: {exc}")
+
+        result = self.run_validator(
+            root, "specs/bench/retrieval-wave1.spec.md"
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("selected artifact path contains symlink", result.stdout)
+        self.assertIn("no valid selected spec artifacts", result.stdout)
+
+    def test_dot_segments_in_ids_are_blocked(self):
+        for aliased_id in (
+            "bench/./retrieval-wave1",
+            "alias/../bench/retrieval-wave1",
+        ):
+            with self.subTest(aliased_id=aliased_id):
+                root = self.copy_catalog()
+                self.rewrite_retrieval_spec_id(root, aliased_id)
+
+                result = self.run_validator(root)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"invalid registry id: {aliased_id}", result.stdout)
+                self.assertIn(f"invalid id: {aliased_id}", result.stdout)
 
     def test_duplicate_spec_id_at_wrong_path_is_blocked(self):
         root = self.copy_catalog()

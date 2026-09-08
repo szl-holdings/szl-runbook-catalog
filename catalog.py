@@ -25,6 +25,13 @@ CLASSES = {"bench", "kernel-fixture", "gpu-jobspec", "vertical-asset"}
 LIST_KEYS = {"tags", "assets"}
 ID_RE = re.compile(r"[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*")
 
+
+def valid_spec_id(spec_id):
+    return bool(ID_RE.fullmatch(spec_id)) and all(
+        segment not in {".", ".."} for segment in spec_id.split("/")
+    )
+
+
 def parse_front_matter(text):
     if not text.startswith("---"):
         return None, "missing front-matter block"
@@ -70,16 +77,18 @@ def parse_registry(text):
     saw_registry = False
 
     for line_number, raw_line in enumerate(text.splitlines(), 1):
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith("#"):
             continue
-        if line == "registry:":
+        if re.fullmatch(r"registry:[ ]*", raw_line):
             if saw_registry:
                 problems.append(f"line {line_number}: duplicate registry key")
             saw_registry = True
             continue
 
-        id_match = re.match(r"^-\s*id:\s*([A-Za-z0-9._/-]+)\s*$", line)
+        id_match = re.fullmatch(
+            r"  - id:[ ]*([A-Za-z0-9._/-]+)[ ]*", raw_line
+        )
         if id_match:
             if not saw_registry:
                 problems.append(f"line {line_number}: entry precedes registry key")
@@ -88,7 +97,9 @@ def parse_registry(text):
             current = {"id": id_match.group(1), "class": None, "line": line_number}
             continue
 
-        class_match = re.match(r"^class:\s*([A-Za-z0-9._-]+)\s*$", line)
+        class_match = re.fullmatch(
+            r"    class:[ ]*([A-Za-z0-9._-]+)[ ]*", raw_line
+        )
         if class_match and current is not None:
             if current["class"] is not None:
                 problems.append(
@@ -113,7 +124,7 @@ def parse_registry(text):
         if spec_id in seen:
             problems.append(f"duplicate registry id: {spec_id}")
         seen.add(spec_id)
-        if not ID_RE.fullmatch(spec_id):
+        if not valid_spec_id(spec_id):
             problems.append(f"invalid registry id: {spec_id}")
         if entry["class"] is None:
             problems.append(f"registry id '{spec_id}' is missing class")
@@ -138,7 +149,7 @@ def load_registry():
 
 
 def expected_spec_path(spec_id):
-    if not ID_RE.fullmatch(spec_id):
+    if not valid_spec_id(spec_id):
         return None
     return os.path.abspath(os.path.join(SPECS, *spec_id.split("/"))) + ".spec.md"
 
@@ -177,23 +188,54 @@ def discover_specs():
     return sorted(targets), problems
 
 
+def first_symlink_component(path):
+    """Return the first symlink in an absolute path, including parent components."""
+    components = []
+    current = os.path.abspath(path)
+    while True:
+        components.append(current)
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    for component in reversed(components):
+        if os.path.islink(component):
+            return component
+    return None
+
+
 def select_specs(raw_targets):
     targets = []
     problems = []
-    specs_root = os.path.normcase(os.path.abspath(SPECS))
+    lexical_specs_root = os.path.normcase(os.path.abspath(SPECS))
+    resolved_specs_root = os.path.normcase(os.path.realpath(SPECS))
     for raw_target in raw_targets:
         path = os.path.abspath(raw_target)
         rel = os.path.relpath(path, HERE)
+        symlink_component = first_symlink_component(path)
+        if symlink_component is not None:
+            problems.append(
+                "selected artifact path contains symlink: "
+                f"{os.path.relpath(symlink_component, HERE)}"
+            )
+            continue
+        resolved_path = os.path.normcase(os.path.realpath(path))
         try:
-            contained = os.path.commonpath([specs_root, os.path.normcase(path)]) == specs_root
+            lexically_contained = (
+                os.path.commonpath([lexical_specs_root, os.path.normcase(path)])
+                == lexical_specs_root
+            )
+            resolved_contained = (
+                os.path.commonpath([resolved_specs_root, resolved_path])
+                == resolved_specs_root
+            )
+            contained = lexically_contained and resolved_contained
         except ValueError:
             contained = False
         if not contained:
             problems.append(f"selected artifact is outside specs: {rel}")
         elif not path.endswith(".spec.md"):
             problems.append(f"selected artifact has the wrong suffix: {rel}")
-        elif os.path.islink(path):
-            problems.append(f"selected artifact must not be a symlink: {rel}")
         elif not os.path.isfile(path):
             problems.append(f"selected artifact is missing: {rel}")
         else:
@@ -224,7 +266,7 @@ def validate_file(path, registry):
             problems.append(f"receipt mismatch: committed {meta['receipt'][:12]}... recomputed {actual[:12]}...")
     spec_id = meta.get("id")
     if spec_id:
-        if not ID_RE.fullmatch(spec_id):
+        if not valid_spec_id(spec_id):
             problems.append(f"invalid id: {spec_id}")
         elif spec_id not in registry:
             problems.append(f"id '{spec_id}' not in catalog.yaml registry")

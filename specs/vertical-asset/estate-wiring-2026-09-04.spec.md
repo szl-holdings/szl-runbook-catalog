@@ -15,4 +15,5 @@ Binds the 2026-09-04 audit to a receipted spec: 113 org repos, 44 HF models,
 40 datasets, 17 Spaces; 8 verticals wired (killinchu, puriq, terra, aegis,
 lyte, counsel, finance, david-leads); 49-estate archive manifest; 12-kernel
 line. Canonical live copies: HF Space SZLHOLDINGS/szl-constellation
-(estates.json, verticals.json), mirrored here on each constellation release.
+(estates.json, verticals.json). The Constellation release lane exclusively owns
+their publication; this catalog is source-only and never writes those files.

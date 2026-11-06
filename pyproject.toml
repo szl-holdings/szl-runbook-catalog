@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "szl-runbook-catalog"
+version = "0.1.0"
+description = "SZL Runbook Catalog - the estate's registry of receipted, hash-committed task specs (bench lanes, kernel fixtures, GPU-bridge jobspecs). SkyPilot-catalog pattern, evolved: every spec carries a"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Stephen Lutar", email = "stephen@szlholdings.com" }]
+dependencies = []
+
+[project.urls]
+Homepage = "https://a-11-oy.com"
+Repository = "https://github.com/szl-holdings/szl-runbook-catalog"
+
+[tool.setuptools]
+py-modules = ["catalog"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["build", "dist", ".venv", "node_modules"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"

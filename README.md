@@ -59,3 +59,9 @@ release lane exclusively owns publication of the canonical manifests in
 
 Doctrine v11 — a spec that fails validation is BLOCKED, never grandfathered.
 Apache-2.0 · SZL Holdings
+
+Estate on Hugging Face: models, datasets and Spaces are published under the [SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS) org.
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).

@@ -51,6 +51,33 @@ class CatalogValidatorTests(unittest.TestCase):
         )
         spec.write_text(text, encoding="utf-8")
 
+    def test_exact_front_matter_markers(self):
+        valid = "---\nid: one\n---\n# Body\n"
+        meta, error = catalog.parse_front_matter(valid)
+        self.assertIsNone(error)
+        self.assertEqual(meta["id"], "one")
+        for spoof in (
+            "----\nid: one\n---\n# Body\n",
+            "---junk\nid: one\n---\n# Body\n",
+            "---\nid: one\n----\n# Body\n",
+            "---\nid: one\n---junk\n# Body\n",
+            "---\nid: one\n# Body\n",
+            "---\nid: one\n",
+        ):
+            with self.subTest(spoof=spoof):
+                _, error = catalog.parse_front_matter(spoof)
+                self.assertIsNotNone(error)
+
+    def test_lookalike_closer_fails_cli_admission(self):
+        root = self.copy_catalog()
+        spec = root / "specs" / "bench" / "retrieval-wave1.spec.md"
+        original = spec.read_text(encoding="utf-8")
+        self.assertIn("\n---\n", original)
+        spec.write_text(original.replace("\n---\n", "\n----\n", 1), encoding="utf-8")
+        result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unterminated front-matter", result.stdout)
+
     def test_committed_catalog_is_admitted(self):
         result = self.run_validator(ROOT)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

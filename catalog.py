@@ -33,12 +33,16 @@ def valid_spec_id(spec_id):
 
 
 def parse_front_matter(text):
-    if not text.startswith("---"):
+    # The catalog accepts a restricted, exact-line delimiter subset.
+    # Prefix matches (e.g. ---- or ---junk) must never close a receipt.
+    if not text.startswith("---\n"):
         return None, "missing front-matter block"
-    end = text.find("\n---", 3)
+    end = text.find("\n---\n", 4)
+    if end < 0 and text.endswith("\n---"):
+        end = len(text) - 4
     if end < 0:
         return None, "unterminated front-matter"
-    block = text[3:end].strip()
+    block = text[4:end].strip()
     meta, current_list = {}, None
     for line in block.splitlines():
         if not line.strip():
